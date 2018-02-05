@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Set number of worker ans leader
 number_leader=3
 number_worker=2
@@ -11,7 +13,7 @@ do
         --driver virtualbox \
         --virtualbox-memory 2048 \
         --virtualbox-cpu-count 2 \
-        leader$i
+        leader$i &
 done
 
 ### Deploy virtual machine worker
@@ -23,12 +25,16 @@ do
         --driver virtualbox \
         --virtualbox-memory 2048 \
         --virtualbox-cpu-count 2 \
-        worker$i
+        worker$i &
 done
 
-### Retrieve leader information
+### Wait virtual machine creation
+wait -n
 
+### Retrieve leader information
 ip_leader1=$(docker-machine ip leader1)
+
+###### START MASTER NODE ######
 
 # Start docker swarm node master
 eval "$(docker-machine env leader1)"
@@ -36,6 +42,8 @@ eval "$(docker-machine env leader1)"
 docker swarm init \
       --listen-addr $ip_leader1 \
       --advertise-addr $ip_leader1
+
+###### START WORKER NODE ######
 
 # Set worker environment
 token=$(docker swarm join-token worker -q)
@@ -64,4 +72,3 @@ do
       --token $token \
       $ip_leader1:2377
 done
-
